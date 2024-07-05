@@ -1,2 +1,7 @@
-# cVNS_2024
-Repository associated with cVNS paper
+# Vagus nerve stimulation enhances remyelination and decreases innate neuroinflammation in lysolecithin-induced demyelination
+
+This repository contains the scripts associated with https://doi.org/10.1016/j.brs.2024.04.012 
+
+- limma_and_gsea.R: script for differential protein abundance analysis and gene set enrichment analysis
+- data_in_brief.R: script to create additional plots for the dataset publication in data in brief
+
