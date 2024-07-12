@@ -61,7 +61,7 @@ pca_plot + theme_light() +
     plot.margin = margin(t = 20, r = 20, b = 20, l = 20)  # Adjust these values for overall plot margins
   )
 
-ggsave('./PCA_all_samples.png')
+ggsave('./PCA_all_samples.pdf')
 
 
 
@@ -134,11 +134,33 @@ length(rownames(DE_sham_vs_RE_sham[DE_sham_vs_RE_sham$logFC <= -1 & DE_sham_vs_R
 length(rownames(DE_cVNS_vs_RE_cVNS[DE_cVNS_vs_RE_cVNS$logFC >= 1 & DE_cVNS_vs_RE_cVNS$adj.P.Val <= 0.05,]))
 length(rownames(DE_cVNS_vs_RE_cVNS[DE_cVNS_vs_RE_cVNS$logFC <= -1 & DE_cVNS_vs_RE_cVNS$adj.P.Val <= 0.05,]))
 
+# WIth LFC cutoff >= 2
+
+write.table(DE_cVNS_vs_RE_cVNS[DE_cVNS_vs_RE_cVNS$logFC >= 2 & DE_cVNS_vs_RE_cVNS$adj.P.Val <= 0.05,], file = './limma/DE_cVNS_vs_RE_cVNS/DE_cVNS_vs_RE_cVNS_up_padj_0.05_LFC_2.txt.txt', sep = '\t', quote = FALSE)
+write.table(DE_cVNS_vs_RE_cVNS[DE_cVNS_vs_RE_cVNS$logFC <= -2 & DE_cVNS_vs_RE_cVNS$adj.P.Val <= 0.05,], file = './limma/DE_cVNS_vs_RE_cVNS/DE_cVNS_vs_RE_cVNS_down_padj_0.05_LFC_-2.txt.txt', sep = '\t', quote = FALSE)
+write.table(DE_sham_vs_RE_sham[DE_sham_vs_RE_sham$logFC >= 2 & DE_sham_vs_RE_sham$adj.P.Val <= 0.05,], file = './limma/DE_sham_vs_RE_sham/DE_sham_vs_RE_sham_up_padj_0.05_LFC_2.txt.txt', sep = '\t', quote = FALSE)
+write.table(DE_sham_vs_RE_sham[DE_sham_vs_RE_sham$logFC <= -2 & DE_sham_vs_RE_sham$adj.P.Val <= 0.05,], file = './limma/DE_sham_vs_RE_sham/DE_sham_vs_RE_sham_down_padj_0.05_LFC_-2.txt.txt', sep = '\t', quote = FALSE)
+
+
+length(rownames(DE_sham_vs_RE_sham[DE_sham_vs_RE_sham$logFC >= 2 & DE_sham_vs_RE_sham$adj.P.Val <= 0.05,]))
+length(rownames(DE_sham_vs_RE_sham[DE_sham_vs_RE_sham$logFC <= -2 & DE_sham_vs_RE_sham$adj.P.Val <= 0.05,]))
+
+length(rownames(DE_cVNS_vs_RE_cVNS[DE_cVNS_vs_RE_cVNS$logFC >= 2 & DE_cVNS_vs_RE_cVNS$adj.P.Val <= 0.05,]))
+length(rownames(DE_cVNS_vs_RE_cVNS[DE_cVNS_vs_RE_cVNS$logFC <= -2 & DE_cVNS_vs_RE_cVNS$adj.P.Val <= 0.05,]))
+
 
 #### Read genes that are interesting in the context of neuroinflammation
 neuroinflammation_genes <- fread('./Proteins_neuroinflammation.csv', sep = '\t')
+# If `Gene names` is an empty string, put in the `Protein IDs`
+neuroinflammation_genes$`Gene names`[neuroinflammation_genes$`Gene names` == ''] <- neuroinflammation_genes$`Protein IDs`[neuroinflammation_genes$`Gene names` == '']
 inflammation_genes <- neuroinflammation_genes[neuroinflammation_genes$Inflammation == 'x',]$`Gene names`
 neuro_genes <- neuroinflammation_genes[neuroinflammation_genes$`Neurological revelant` == 'x',]$`Gene names`
+all_genes <- unique(c(inflammation_genes, neuro_genes))
+# Remove empty strings from gene sets
+all_genes <- all_genes[all_genes != '']
+inflammation_genes <- inflammation_genes[inflammation_genes != '']
+neuro_genes <- neuro_genes[neuro_genes != '']
+
 
 protein_gene <- fread('../RE-ANALYSIS/MS_results_PRC-6146_DE_imp_quant_protein.csv', header =TRUE, data.table=FALSE, fill=TRUE, sep ='\t')[,c(3,4,5)]
 colnames(protein_gene) <- c('Protein_names', 'Gene_names', 'Description')
@@ -170,34 +192,36 @@ create_volcano_plot <- function(df, title, genes_to_highlight) {
     y = 'adj.P.Val',
     pCutoff = pval_threshold,
     FCcutoff = log2fc_threshold,
-    xlim = c(-5, 5),
+    #xlim = c(-5, 5),
     title = title,
+    subtitle = '',
     pointSize = 3,
-    labSize = 5)
+    labSize = 5.5) +
+    theme(plot.title = element_text(hjust = 0.5))
   
-  ggsave(paste0('./limma/', folder,'/', title,'_volcano.png'))
+  ggsave(paste0('./limma/', folder,'/', title,'_volcano.png'), width = 10, height = 10, dpi = 300)
 }
 
 
 # Create volcano plots
 #pdf('./results/limma/DE_cVNS_vs_DE_sham/DE_cVNS_vs_DE_sham_volcano.pdf')
-create_volcano_plot(DE_cVNS_vs_DE_sham, 'DE_cVNS_vs_DE_sham - neuroinflammation', inflammation_genes)
-create_volcano_plot(DE_cVNS_vs_DE_sham, 'DE_cVNS_vs_DE_sham - neurologically relevant', neuro_genes)
+create_volcano_plot(DE_cVNS_vs_DE_sham, 'DE_cVNS_vs_DE_sham - Neuroinflammation', inflammation_genes)
+create_volcano_plot(DE_cVNS_vs_DE_sham, 'DE_cVNS_vs_DE_sham - Neurologically relevant', neuro_genes)
 #dev.off()
 
 #pdf('./results/limma/RE_cVNS_vs_RE_sham/RE_cVNS_vs_RE_sham_volcano.pdf')
-create_volcano_plot(RE_cVNS_vs_RE_sham, 'RE_cVNS_vs_RE_sham - neuroinflammation', inflammation_genes)
-create_volcano_plot(RE_cVNS_vs_RE_sham, 'RE_cVNS_vs_RE_sham - neurologically relevant', neuro_genes)
+create_volcano_plot(RE_cVNS_vs_RE_sham, 'RE_cVNS_vs_RE_sham - Neuroinflammation', inflammation_genes)
+create_volcano_plot(RE_cVNS_vs_RE_sham, 'RE_cVNS_vs_RE_sham - Neurologically relevant', neuro_genes)
 #dev.off()
 
 #pdf('./results/limma/DE_cVNS_vs_RE_cVNS/DE_cVNS_vs_RE_cVNS_volcano.pdf')
-create_volcano_plot(DE_cVNS_vs_RE_cVNS, 'DE_cVNS_vs_RE_cVNS - neuroinflammation', inflammation_genes)
-create_volcano_plot(DE_cVNS_vs_RE_cVNS, 'DE_cVNS_vs_RE_cVNS - neurologically relevant', neuro_genes)
+create_volcano_plot(DE_cVNS_vs_RE_cVNS, 'DE_cVNS_vs_RE_cVNS - Neuroinflammation', inflammation_genes)
+create_volcano_plot(DE_cVNS_vs_RE_cVNS, 'DE_cVNS_vs_RE_cVNS - Neurologically relevant', neuro_genes)
 #dev.off()
 
 #pdf('./results/limma/DE_sham_vs_RE_sham/DE_sham_vs_RE_sham_volcano.pdf')
-create_volcano_plot(DE_sham_vs_RE_sham, 'DE_sham_vs_RE_sham - neuroinflammation', inflammation_genes)
-create_volcano_plot(DE_sham_vs_RE_sham, 'DE_sham_vs_RE_sham - neurologically relevant', neuro_genes)
+create_volcano_plot(DE_sham_vs_RE_sham, 'DE_sham_vs_RE_sham - Neuroinflammation', inflammation_genes)
+create_volcano_plot(DE_sham_vs_RE_sham, 'DE_sham_vs_RE_sham - Neurologically relevant', neuro_genes)
 #dev.off()
 
 
@@ -206,22 +230,91 @@ pval_threshold <- 0.05
 log2fc_threshold <- 2
 
 
-create_volcano_plot(DE_cVNS_vs_DE_sham, 'DE_cVNS_vs_DE_sham - neuroinflammation 2', inflammation_genes)
-create_volcano_plot(DE_cVNS_vs_DE_sham, 'DE_cVNS_vs_DE_sham - neurologically relevant 2', neuro_genes)
+create_volcano_plot(DE_cVNS_vs_DE_sham, 'DE_cVNS_vs_DE_sham - Neuroinflammation 2', inflammation_genes)
+create_volcano_plot(DE_cVNS_vs_DE_sham, 'DE_cVNS_vs_DE_sham - Neurologically relevant 2', neuro_genes)
 #dev.off()
 
 #pdf('./results/limma/RE_cVNS_vs_RE_sham/RE_cVNS_vs_RE_sham_volcano.pdf')
-create_volcano_plot(RE_cVNS_vs_RE_sham, 'RE_cVNS_vs_RE_sham - neuroinflammation 2', inflammation_genes)
-create_volcano_plot(RE_cVNS_vs_RE_sham, 'RE_cVNS_vs_RE_sham - neurologically relevant 2', neuro_genes)
+create_volcano_plot(RE_cVNS_vs_RE_sham, 'RE_cVNS_vs_RE_sham - Neuroinflammation 2', inflammation_genes)
+create_volcano_plot(RE_cVNS_vs_RE_sham, 'RE_cVNS_vs_RE_sham - Neurologically relevant 2', neuro_genes)
 #dev.off()
 
 #pdf('./results/limma/DE_cVNS_vs_RE_cVNS/DE_cVNS_vs_RE_cVNS_volcano.pdf')
-create_volcano_plot(DE_cVNS_vs_RE_cVNS, 'DE_cVNS_vs_RE_cVNS - neuroinflammation 2', inflammation_genes)
-create_volcano_plot(DE_cVNS_vs_RE_cVNS, 'DE_cVNS_vs_RE_cVNS - neurologically relevant 2', neuro_genes)
+create_volcano_plot(DE_cVNS_vs_RE_cVNS, 'DE_cVNS_vs_RE_cVNS - Neuroinflammation 2', inflammation_genes)
+create_volcano_plot(DE_cVNS_vs_RE_cVNS, 'DE_cVNS_vs_RE_cVNS - Neurologically relevant 2', neuro_genes)
 #dev.off()
 
 #pdf('./results/limma/DE_sham_vs_RE_sham/DE_sham_vs_RE_sham_volcano.pdf')
-create_volcano_plot(DE_sham_vs_RE_sham, 'DE_sham_vs_RE_sham - neuroinflammation 2', inflammation_genes)
-create_volcano_plot(DE_sham_vs_RE_sham, 'DE_sham_vs_RE_sham - neurologically relevant 2', neuro_genes)
+create_volcano_plot(DE_sham_vs_RE_sham, 'DE_sham_vs_RE_sham - Neuroinflammation 2', inflammation_genes)
+create_volcano_plot(DE_sham_vs_RE_sham, 'DE_sham_vs_RE_sham - Neurologically relevant 2', neuro_genes)
 #dev.off()
 
+pval_threshold <- 0.05
+log2fc_threshold <- 1
+
+
+create_volcano_plot(DE_cVNS_vs_DE_sham, 'DE_cVNS_vs_DE_sham', all_genes)
+create_volcano_plot(RE_cVNS_vs_RE_sham, 'RE_cVNS_vs_RE_sham', all_genes)
+create_volcano_plot(DE_cVNS_vs_RE_cVNS, 'DE_cVNS_vs_RE_cVNS', all_genes)
+create_volcano_plot(DE_sham_vs_RE_sham, 'DE_sham_vs_RE_sham', all_genes)
+
+library(pheatmap)
+# Create heatmap that shows Z-scored protein expression for proteins related to neuroinflammation or neurologically relevant proteins
+
+# inflammation_proteins <- neuroinflammation_genes[neuroinflammation_genes$Inflammation == 'x',]$`Protein IDs`
+# neuro_proteins <- neuroinflammation_genes[neuroinflammation_genes$`Neurological revelant` == 'x',]$`Protein IDs`
+
+
+create_heatmap <- function(df, title_full, protein_set, samples, folder, plot_title) {
+  
+  # df <- dat
+  # title_full <- 'DE_cVNS_vs_RE_cVNS_neurologically_relevant'
+  # protein_set <- all_genes
+  # samples <- c('DE_cVNS', 'RE_cVNS', 'gene')
+  # # 
+  annotation_df <- data.frame(
+    row.names = colnames(df),
+    group = factor(substr(colnames(df), 1, 7))
+  )
+  
+  df$gene <- protein_gene[rownames(df),]$Gene_names
+  df <- df[df$gene %in% protein_set, (substr(colnames(df),1,7) %in% samples)]
+  
+ 
+  #remove rows with duplicate gene
+  df <- df[!duplicated(df$gene),]
+  
+  rownames(df) <- df$gene; df$gene <- NULL
+
+  # Z-score the data
+  significant_genes_zscore <- t(scale(t(df)))
+  # Define color palette
+  my_palette <- colorRampPalette(c("blue", "white", "red"))(50)
+  # Create heatmap
+  pheatmap(
+    significant_genes_zscore, 
+    annotation_col = annotation_df, 
+    show_rownames = TRUE, 
+    show_colnames = FALSE, 
+    fontsize = 8, 
+    fontsize_row = 9, 
+    fontsize_col = 8, 
+    color = my_palette, 
+    cluster_rows = TRUE, 
+    cluster_cols = TRUE,
+    main = paste0(plot_title, '\n'), 
+    filename = paste0('./limma/', folder, '/', title_full, '_heatmap.png')
+  ) 
+  
+  #ggsave(paste0('./limma/', folder,'/', title,'_heatmap.png'))
+}
+
+samples <- c('DE_cVNS', 'RE_cVNS', 'gene')
+create_heatmap(dat, 'DE_cVNS_vs_RE_cVNS_neurologically_relevant', neuro_genes, samples, 'DE_cVNS_vs_RE_cVNS', plot_title = 'DE_cVNS_vs_RE_cVNS - Neurologically relevant')
+create_heatmap(dat, 'DE_cVNS_vs_RE_cVNS_neuroinflammation', inflammation_genes, samples, 'DE_cVNS_vs_RE_cVNS', plot_title = 'DE_cVNS_vs_RE_cVNS - Neuroinflammation')
+create_heatmap(dat, 'DE_cVNS_vs_RE_cVNS_all', all_genes, samples, 'DE_cVNS_vs_RE_cVNS', plot_title = 'DE_cVNS_vs_RE_cVNS')
+
+samples <- c('DE_sham', 'RE_sham', 'gene')
+create_heatmap(dat, 'DE_sham_vs_RE_sham_neurologically_relevant', neuro_genes, samples, 'DE_sham_vs_RE_sham', plot_title = 'DE_sham_vs_RE_sham - Neurologically relevant')
+create_heatmap(dat, 'DE_sham_vs_RE_sham_neuroinflammation', inflammation_genes, samples, 'DE_sham_vs_RE_sham' , plot_title = 'DE_sham_vs_RE_sham - Neuroinflammation')
+create_heatmap(dat, 'DE_sham_vs_RE_sham_all', all_genes, samples, 'DE_sham_vs_RE_sham', plot_title = 'DE_sham_vs_RE_sham')
